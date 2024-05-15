@@ -16,6 +16,19 @@ def count_calls(method: Callable) -> Callable:
         return method(self, *args, **kwargs)
     return wrapper
 
+def call_history(method: Callable) -> Callable:
+    """This decorator will store the history of inputs and outputs."""
+    @wraps(method)
+    def wrapper(self, *args, **kwargs) -> Any:
+        inputs = f'{method.__qualname__}:inputs'
+        outputs = f'{method.__qualname__}:outputs'
+        if isinstance(self, Cache):
+            self._redis.rpush(inputs, str(args))
+            result = method(self, *args, **kwargs)
+            self._redis.rpush(outputs, str(result))
+        return result
+    return wrapper
+
 
 class Cache:
     """This class is for the exercise of the course."""
@@ -25,6 +38,7 @@ class Cache:
         self._redis.flushdb(True)
 
     @count_calls
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """Store the data in the database."""
         key = str(uuid())
