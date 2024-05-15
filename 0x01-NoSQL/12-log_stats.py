@@ -22,7 +22,6 @@ def filter_nginx_logs(nginx_logs):
     print('{} status check'.format(status_route_visits))
 
 
-
 def run():
     '''Configure Client and query logs data'''
     client = MongoClient('mongodb://127.0.0.1:27017')
