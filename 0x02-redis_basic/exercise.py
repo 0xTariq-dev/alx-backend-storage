@@ -16,6 +16,7 @@ def count_calls(method: Callable) -> Callable:
         return method(self, *args, **kwargs)
     return wrapper
 
+
 def call_history(method: Callable) -> Callable:
     """This decorator will store the history of inputs and outputs."""
     @wraps(method)
@@ -24,10 +25,31 @@ def call_history(method: Callable) -> Callable:
         outputs = f'{method.__qualname__}:outputs'
         if isinstance(self, Cache):
             self._redis.rpush(inputs, str(args))
-            result = method(self, *args, **kwargs)
+        result = method(self, *args, **kwargs)
+        if isinstance(self, Cache):
             self._redis.rpush(outputs, str(result))
         return result
     return wrapper
+
+
+def replay(method: Callable) -> None:
+    """This function will display the history of calls of a function."""
+    if method is None or not callable(method):
+        return
+    redis_store = getattr(method.__self__, '_redis', None)
+    if not isinstance(redis_store, redis.Redis):
+        return
+    fn_name = method.__qualname__
+    inputs = f'{fn_name}:inputs'
+    outputs = f'{fn_name}:outputs'
+    count = 0
+    if redis_store.exists(fn_name):
+        count = int(redis_store.get(fn_name))
+    print(f'{fn_name} was called {count} times:')
+    fn_inputs = redis_store.lrange(inputs, 0, -1)
+    fn_outputs = redis_store.lrange(outputs, 0, -1)
+    for i, o in zip(fn_inputs, fn_outputs):
+        print(f'{fn_name}({i.decode("utf-8")}) -> {o.decode("utf-8")}')
 
 
 class Cache:
