@@ -17,14 +17,15 @@ def cache_result(method: Callable) -> Callable:
     @wraps(method)
     def wrapper(url: str) -> str:
         """Wrapper function for Caching requests output."""
+        redis_client.incr(f'count:{url}')
 
         res = redis_client.get(f'result:{url}')
 
         if res:
-            redis_client.incr(f'count:{url}')
             return res.decode('utf-8')
         res = method(url)
-        redis_client.setex(f'count:{url}', 10, 1)
+        if not redis_client.exists(f'count:{url}'):
+            redis_client.set(f'count:{url}', 1)
         redis_client.setex(f'result:{url}', 10, res)
         return res
     return wrapper
