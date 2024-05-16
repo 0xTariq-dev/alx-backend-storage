@@ -49,7 +49,7 @@ def replay(method: Callable) -> None:
     fn_inputs = redis_store.lrange(inputs, 0, -1)
     fn_outputs = redis_store.lrange(outputs, 0, -1)
     for i, o in zip(fn_inputs, fn_outputs):
-        print(f'{fn_name}({i.decode("utf-8")}) -> {o.decode("utf-8")}')
+        print(f'{fn_name}(*{i.decode("utf-8")}) -> {o.decode("utf-8")}')
 
 
 class Cache:
